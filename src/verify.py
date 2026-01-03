@@ -7,7 +7,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.x509 import load_pem_x509_certificate, load_der_x509_certificate
 from cryptography.x509 import load_pem_x509_crl, load_der_x509_crl
 
-# --- COLORI ---
+# --- COLORS ---
 class Colors:
     HEADER = '\033[95m'
     BLUE = '\033[94m'
@@ -19,7 +19,7 @@ class Colors:
     BOLD = '\033[1m'
     GRAY = '\033[90m'
 
-# --- ASN.1 STRUTTURE ICAO ---
+# --- ASN.1 ICAO STRUCTURES ---
 class DataGroupHash(core.Sequence):
     _fields = [('dg_num', core.Integer), ('dg_hash', core.OctetString)]
 class DataGroupHashValues(core.SequenceOf):
@@ -32,7 +32,6 @@ class PassiveValidator:
         self.paths = {'DG1': dg1_path, 'DG2': dg2_path, 'SOD': sod_path}
         self.csca_folder = csca_folder
         self.crl_path = crl_path
-        # Estrae l'ID (MRZ) dal nome del file per usarlo nei salvataggi
         self.mrz_id = os.path.basename(dg1_path).split('-')[0]
         
         self.algo_map = {
@@ -85,7 +84,7 @@ class PassiveValidator:
     def run(self):
         print(f"\n{Colors.HEADER}{Colors.BOLD}=== ANALISI FORENSE PASSAPORTO ELETTRONICO (PA) ==={Colors.ENDC}")
         
-        # --- CARICAMENTO SOD ---
+        # --- SOD LOADING ---
         try:
             with open(self.paths['SOD'], 'rb') as f: 
                 sod_raw = self._unwrap_sod(f.read())
@@ -95,7 +94,7 @@ class PassiveValidator:
             print(f"{Colors.FAIL}CRITICAL: Impossibile leggere il SOD: {e}{Colors.ENDC}"); return
 
         # ---------------------------------------------------------
-        # STEP 1: INTEGRITÀ (Hashing)
+        # STEP 1: INTEGRITY (Hashing)
         # ---------------------------------------------------------
         print(f"\n{Colors.BLUE}{Colors.BOLD}[STEP 1] VERIFICA INTEGRITÀ DATI (LDS Analysis){Colors.ENDC}")
         
@@ -130,7 +129,7 @@ class PassiveValidator:
         if not all_integrity_ok: return
 
         # ---------------------------------------------------------
-        # STEP 2: FIRMA DIGITALE (Document Signer)
+        # STEP 2: DIGITAL SIGNATURE (Document Signer)
         # ---------------------------------------------------------
         print(f"\n{Colors.BLUE}{Colors.BOLD}[STEP 2] VERIFICA FIRMA DIGITALE SOD (Auth Check){Colors.ENDC}")
         
@@ -143,7 +142,7 @@ class PassiveValidator:
         self._log("Emittente (Issuer)", ds_cert.issuer.rfc4514_string())
         self._log("Valido Dal", ds_cert.not_valid_before.strftime('%Y-%m-%d')) 
         
-        # --- SALVATAGGIO CERTIFICATO REALE ---
+        # --- SAVING REAL CERTIFICATE ---
         cert_real_path = os.path.join(os.path.dirname(self.paths['SOD']), f"sod_Certificate.pem")
         self._save_real_cert(ds_cert, cert_real_path)
         # -------------------------------------
@@ -170,7 +169,7 @@ class PassiveValidator:
         hash_cls = self.algo_map.get(sig_algo_oid, hashes.SHA256())
         signature_ok = False
         
-        # Logica di verifica (inclusa gestione Salt=64 per Italia)
+        # Verification Logic (Salt=64 for Italy)
         if isinstance(ds_pub, rsa.RSAPublicKey):
             try:
                 ds_pub.verify(signature, bytes(payload), padding.PSS(mgf=padding.MGF1(hash_cls), salt_length=64), hash_cls)
@@ -224,7 +223,7 @@ class PassiveValidator:
             print(f"\n   {Colors.WARNING}⚠️  Nessun CSCA valido trovato.{Colors.ENDC}")
 
         # ---------------------------------------------------------
-        # STEP 4: CRL (Revoca)
+        # STEP 4: CRL (Revocation)
         # ---------------------------------------------------------
         print(f"\n{Colors.BLUE}{Colors.BOLD}[STEP 4] CONTROLLO REVOCA (CRL){Colors.ENDC}")
         crl_ok = False
@@ -247,7 +246,6 @@ class PassiveValidator:
         else:
             print(f"   {Colors.GRAY}File CRL non trovato{Colors.ENDC}")
 
-        # VERDETTO
         print(f"\n{Colors.BOLD}{'='*60}{Colors.ENDC}")
         if all_integrity_ok and signature_ok and chain_verified and crl_ok:
             print(f"{Colors.GREEN}{Colors.BOLD}   VERDETTO FINALE: PASSAPORTO VALIDO E AUTENTICO{Colors.ENDC}")
@@ -260,8 +258,8 @@ if __name__ == "__main__":
     dumps_dir = os.path.join(base_dir, "..", "dumps")
     certs_dir = os.path.join(base_dir, "..", "certs")
     
-    # ID Passaporto (Modificalo se usi quello Iraniano!)
-    MRZ_ID = "YC60963196ITA7005107M3407149<<<<<<<<<<<<<<02"
+    # ID Passaporto 
+    MRZ_ID = "YOUR_MRZ"
 
     v = PassiveValidator(
         dg1_path=os.path.join(dumps_dir, f"{MRZ_ID}-DG1.bin"), 
