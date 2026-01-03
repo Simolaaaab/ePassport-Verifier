@@ -5,11 +5,10 @@ from pypassport import epassport
 from pypassport.epassport import EPassport
 from pypassport.reader import ReaderManager
 
-# --- CONFIGURAZIONE ---
-# Inserisci qui la MRZ corretta del passaporto che stai scansionando
+# --- CONFIGURATION ---
+# Insert here the correct MRZ 
 MRZ_STRING = "YC60963196ITA7005107M3407149<<<<<<<<<<<<<<02"
 
-# Cartella di output (risale di un livello da src/ e va in dumps/)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(BASE_DIR, "..", "dumps")
 
@@ -33,16 +32,12 @@ def save_datagroup(ep, tag_id, filename_suffix, is_binary=True):
     try:
         dg_object = ep[tag_id]
         
-        # Se è un file binario (SOD, DG1, DG2 per hash), estraiamo i bytes grezzi (.file)
         if is_binary:
-            # Pypassport a volte wrappa in un oggetto, a volte no.
-            # Cerchiamo l'attributo .file o .encoded
             if hasattr(dg_object, 'file'):
                 data_to_save = dg_object.file
             elif hasattr(dg_object, 'encoded'):
                 data_to_save = dg_object.encoded
             else:
-                # Fallback: prova a castare a bytes se è già raw
                 data_to_save = bytes(dg_object)
             
             out_path = os.path.join(OUTPUT_DIR, f"{MRZ_STRING}-{filename_suffix}.bin")
@@ -50,7 +45,6 @@ def save_datagroup(ep, tag_id, filename_suffix, is_binary=True):
                 f.write(data_to_save)
             print(f"[OK] Salvato BINARIO: {out_path} (Tipo: {type(data_to_save)})")
 
-        # Se vogliamo salvare i metadati decodificati (JSON)
         else:
             clean_data = encode_binary(dg_object)
             json_str = json.dumps(clean_data, indent=3)
@@ -74,18 +68,13 @@ def main():
     print(f"Carta rilevata. Tentativo accesso BAC con MRZ: {MRZ_STRING}")
     ep = EPassport(reader, MRZ_STRING)
     
-    # Non chiamare ep.readPassport() completo se vuoi estrarre file specifici uno a uno
-    # per evitare errori di parsing su tag sconosciuti.
     
-    # 1. DG1 (Dati Anagrafici)
+    # 1. DG1 
     save_datagroup(ep, "61", "DG1", is_binary=True)
     save_datagroup(ep, "61", "DG1-Meta", is_binary=False)
 
-    # 2. DG2 (Foto)
-    # Nota: la foto grezza (JPEG) è annidata, ma per la verifica hash serve il DG2 intero (Tag 75)
+    # 2. DG2 (Photo)
     save_datagroup(ep, "75", "DG2", is_binary=True) 
-    
-    # Estrazione Foto JPEG per visualizzazione (Opzionale)
     try:
         photo_data = ep["75"]["A1"]["5F2E"]
         photo_path = os.path.join(OUTPUT_DIR, f"{MRZ_STRING}-photo.jpg")
@@ -95,7 +84,7 @@ def main():
     except Exception as e:
         print(f"[WARN] Impossibile estrarre anteprima JPG: {e}")
 
-    # 3. SOD (Security Object) - CRUCIALE
+    # 3. SOD (Security Object) 
     save_datagroup(ep, "77", "SOD", is_binary=True)
 
     print("\n--- Scansione Completata ---")
