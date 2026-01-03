@@ -94,5 +94,3 @@ chmod +x run_analysis.sh
 ## 🎓 Context
 
 Developed as part of a university project on **PKI & ePassport Security**. The tool highlights the challenges of global interoperability in digital border control systems.
-
-```
