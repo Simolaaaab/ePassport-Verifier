@@ -7,7 +7,7 @@ from pypassport.reader import ReaderManager
 
 # --- CONFIGURATION ---
 # Insert here the correct MRZ 
-MRZ_STRING = "YC60963196ITA7005107M3407149<<<<<<<<<<<<<<02"
+MRZ_STRING = "YOUR_MRZ"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(BASE_DIR, "..", "dumps")
