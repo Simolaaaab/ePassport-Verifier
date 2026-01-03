@@ -255,8 +255,8 @@ class PassiveValidator:
 
 if __name__ == "__main__":
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    dumps_dir = os.path.join(base_dir, "..", "dumps")
-    certs_dir = os.path.join(base_dir, "..", "certs")
+    dumps_dir = os.path.join(base_dir, "..", "data/dumps")
+    certs_dir = os.path.join(base_dir, "..", "data/certs")
     
     # ID Passaporto 
     MRZ_ID = "YOUR_MRZ"
